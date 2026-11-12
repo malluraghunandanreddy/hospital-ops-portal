@@ -1,0 +1,18 @@
+DEMO LOGINS - for showing the system only. All demo logins use the same password:  Demo@2026
+A real (clean) copy never uses this password: each person gets a one-time password and chooses their own.
+
+Username     Person                    What they see
+arjun     Dr A. Arjun Rao      Everything (full access)
+meera      Dr A. Meera             Everything (full access)
+kavya      Dr K. Kavya Sharma       In-house doctor: My day, Queue, Beds, OT, Admissions
+rohan     Dr P. Rohan Mehta           Visiting doctor: My day, Queue, Beds, OT (own patients only)
+farhan        Dr S. Farhan Ali         Visiting doctor: My day, Queue, Beds, OT (own patients only)
+anita        Anita Reddy          Reception
+salma      Sk. Salma Begum              Reception
+grace        Sr. Grace Mary         Nursing: Ward duty, Beds, OT
+ramesh       Ch. Ramesh Kumar              Pharmacy
+prakash      K. Prakash Rao            Insurance desk: Claims, Admissions
+citylab    City Diagnostics       Outside lab: Lab only
+
+All names, the hospital and the place are made up.
+What each role sees can be changed in Settings > Who can see what.

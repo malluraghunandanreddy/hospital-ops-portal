@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sunrise Hospital - Waiting hall</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: #1d2521; font-family: system-ui, -apple-system, "Segoe UI", "Nirmala UI", "Noto Sans Telugu", sans-serif; }
+  header { display: flex; justify-content: space-between; align-items: baseline; padding: 1.6vw 2.4vw; border-bottom: 3px solid #2457d6; }
+  header h1 { margin: 0; font-size: 3vw; color: #2457d6; }
+  header div { font-size: 2.2vw; font-variant-numeric: tabular-nums; }
+  main { display: grid; grid-template-columns: repeat(auto-fit, minmax(30vw, 1fr)); gap: 1.4vw; padding: 1.6vw 2.4vw; }
+  .dept { border: 2px solid #d8dcd6; border-radius: 10px; padding: 1.2vw 1.6vw; }
+  .dept h2 { margin: 0; font-size: 2vw; }
+  .dept .te { font-size: 1.7vw; color: #5f6b64; }
+  .now { font-size: 6.4vw; font-weight: 800; line-height: 1.1; margin: 0.6vw 0; color: #2457d6; font-variant-numeric: tabular-nums; }
+  .now.none { color: #aab2ab; font-size: 3vw; font-weight: 500; padding: 1.6vw 0; }
+  .now.flash { background: #fbf1d9; }
+  .lbl { font-size: 1.3vw; color: #5f6b64; letter-spacing: 0.06em; }
+  .next { font-size: 2vw; font-variant-numeric: tabular-nums; }
+  .doc { font-size: 1.5vw; margin-top: 0.6vw; color: #5f6b64; }
+  .wait { font-size: 1.5vw; margin-top: 0.6vw; color: #1f3b80; background: #eaf0fe; border-radius: 8px; padding: 0.4vw 0.8vw; display: inline-block; }
+  .pname { font-size: 2.6vw; font-weight: 600; margin-bottom: 0.6vw; }
+  .now.name { font-size: 4.6vw; letter-spacing: 0; overflow-wrap: anywhere; }
+  .pname.small { font-size: 1.6vw; color: #5f6b64; font-weight: 500; }
+  .doc b.delayed { color: #8a5a00; } .doc b.surgery { color: #1f4e7a; } .doc b.in { color: #2457d6; }
+  footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 1vw 2.4vw; font-size: 1.6vw; background: #f4f5f2; border-top: 1px solid #d8dcd6; display: flex; justify-content: space-between; gap: 2vw; }
+  #sound { font: inherit; padding: 0.4vw 1.2vw; border: 1px solid #b9c0b9; border-radius: 6px; background: #fff; cursor: pointer; }
+  .empty { font-size: 2.4vw; color: #5f6b64; padding: 6vw 0; text-align: center; grid-column: 1 / -1; }
+  @media (max-width: 800px) {
+    header h1 { font-size: 22px; } header div { font-size: 16px; }
+    main { grid-template-columns: 1fr; gap: 10px; padding: 12px 12px 80px; }
+    .dept { padding: 12px; } .dept h2 { font-size: 18px; } .dept .te { font-size: 15px; }
+    .now { font-size: 54px; } .now.none { font-size: 20px; padding: 10px 0; } .pname { font-size: 22px; }
+    .lbl { font-size: 12px; } .next { font-size: 18px; } .doc { font-size: 14px; }
+    footer { font-size: 13px; padding: 8px 12px; } .empty { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<header><h1 id="hosp">Sunrise Hospital</h1><div id="clock"></div></header>
+<main id="grid"></main>
+<footer><span>మీ స్లిప్‌పై ఉన్న టోకెన్ నంబర్ ఇక్కడ కనిపించినప్పుడు డాక్టర్ గదికి వెళ్ళండి · Go to the doctor's room when the token number on your slip appears here · Scan the QR on your slip to follow your turn on your phone<span id="cas"></span></span>
+  <button id="sound">Staff: tap once to switch on voice call-out</button></footer>
+<script>
+'use strict';
+const WORDS = { in: ['In', 'ఉన్నారు'], delayed: ['Delayed', 'ఆలస్యం'], surgery: ['In surgery', 'సర్జరీలో'], out: ['Not in', 'లేరు'] };
+const last = {};
+let MODE = 'both';
+let soundOn = false, first = true;
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+function announce(d) {
+  if (!soundOn || !window.speechSynthesis) return;
+  const num = d.now.token_no;
+  const voices = speechSynthesis.getVoices();
+  const te = voices.find((v) => v.lang.toLowerCase().startsWith('te'));
+  const who = d.now.name ? ', ' + d.now.name : '';
+  let text = te ? 'టోకెన్ నంబర్ ' + num + who + ', ' + (d.name_te || d.name) : 'Token number ' + num + who + ', ' + d.name;
+  if (MODE === 'name' && d.now.name) text = te ? d.now.name + ', ' + (d.name_te || d.name) + ' కి రండి' : d.now.name + ', please come to ' + d.name;
+  for (let i = 0; i < 2; i++) {  // said twice, as staff do when calling out
+    const u = new SpeechSynthesisUtterance(text);
+    if (te) u.voice = te; else u.lang = 'en-IN';
+    u.rate = 0.85;
+    speechSynthesis.speak(u);
+  }
+}
+
+// A TV can show chosen departments only: /display?d=PED,ORT,GEN (codes as on the tokens). Without it, all are shown.
+const ONLY = (new URLSearchParams(location.search).get('d') || '').toUpperCase().split(',').map((x) => x.trim()).filter(Boolean);
+async function load() {
+  let d;
+  try { d = await (await fetch('/api/display')).json(); } catch (e) { return; }
+  document.getElementById('hosp').textContent = d.hospital;
+  MODE = d.mode || 'both';
+  document.getElementById('cas').textContent = d.casualty ? ' · Emergency: ' + d.casualty : '';
+  const grid = document.getElementById('grid');
+  const cards = d.departments.filter((x) => !ONLY.length || ONLY.includes(x.code)).map((x) => {
+    const c = el('section', 'dept');
+    c.append(el('h2', '', x.name), el('div', 'te', x.name_te), el('div', 'lbl', 'NOW CALLING / ఇప్పుడు పిలుస్తున్నది'));
+    const key = x.now ? x.now.token_code + x.now.called_at : '';
+    const fresh = x.now && last[x.code] !== key && !first;
+    if (MODE === 'name' && x.now && x.now.name) {
+      c.append(el('div', 'now name' + (fresh ? ' flash' : ''), x.now.name), el('div', 'pname small', x.now.token_code));
+    } else {
+      c.append(el('div', 'now' + (x.now ? '' : ' none') + (fresh ? ' flash' : ''), x.now ? x.now.token_code : 'Nobody called yet'));
+      if (x.now && x.now.name) c.append(el('div', 'pname', x.now.name));
+    }
+    if (fresh) announce(x);
+    last[x.code] = key;
+    if (x.next.length) { c.append(el('div', 'lbl', 'NEXT TOKENS / తరువాతి టోకెన్లు'), el('div', 'next', x.next.join('   ') + (x.waiting > x.next.length ? '   +' + (x.waiting - x.next.length) : ''))); }
+    if (x.waiting) c.append(el('div', 'wait', x.waiting + ' waiting · about ' + x.per + ' min each · last token waits about ' + (x.waiting * x.per) + ' min  ·  ' + x.waiting + ' మంది వేచి ఉన్నారు'));
+    for (const doc of x.doctors) {
+      const line = el('div', 'doc', doc.name + ' — ');
+      line.append(el('b', doc.status, WORDS[doc.status].join(' / ')));
+      if (doc.status_note) line.append(' (' + doc.status_note + ')');
+      c.append(line);
+    }
+    return c;
+  });
+  grid.replaceChildren(...(cards.length ? cards : [el('div', 'empty', 'OP has not started yet · ఓపీ ఇంకా ప్రారంభం కాలేదు')]));
+  first = false;
+}
+setInterval(() => { document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }); }, 1000);
+document.getElementById('sound').onclick = (e) => {
+  soundOn = !soundOn;
+  e.target.textContent = soundOn ? 'Voice call-out is ON (tap to switch off)' : 'Staff: tap once to switch on voice call-out';
+  if (soundOn && window.speechSynthesis) speechSynthesis.speak(new SpeechSynthesisUtterance(' '));
+};
+load();
+setInterval(load, 4000);
+</script>
+</body>
+</html>

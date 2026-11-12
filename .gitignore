@@ -1,0 +1,7 @@
+data/
+__pycache__/
+*.db
+*.db-*
+*.zip
+.DS_Store
+setup-checklist.html
